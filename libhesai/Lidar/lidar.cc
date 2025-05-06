@@ -540,6 +540,7 @@ void Lidar<T_Point>::RecieveUdpThread() {
       std::this_thread::sleep_for(std::chrono::microseconds(1000));
       continue;
     }
+    
     while(origin_packets_buffer_.full() && running_) std::this_thread::sleep_for(std::chrono::microseconds(1000));
     if(running_ == false) break;
     udp_packet.recv_timestamp = GetMicroTimeU64();
@@ -564,6 +565,11 @@ void Lidar<T_Point>::RecieveUdpThread() {
           udp_packet.packet_len = static_cast<uint16_t>(len);
           origin_packets_buffer_.emplace_back(udp_packet);
           is_timeout_ = false;
+
+          if (raw_packet_cb_) {
+            raw_packet_cb_(udp_packet); // Pass the SDK UdpPacket struct
+          }
+          
         }
         break;
   }
@@ -732,3 +738,7 @@ void Lidar<T_Point>::EnableRecordPcap(bool bRecord) {
   is_record_pcap_ = bRecord;
 }
 
+template <typename T_Point>
+void Lidar<T_Point>::RegRecvRawPacketCallback(const std::function<void(const UdpPacket&)>& callback) {
+  raw_packet_cb_ = callback;
+}
